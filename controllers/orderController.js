@@ -15,7 +15,7 @@ export const addOrderItems = async (req, res) => {
             shippingAddress,
             paymentMethod,
             itemsPrice,
-            shippingPrice,
+            shippingPrice = 50,
             couponCode,
             customerName,
             customerEmail

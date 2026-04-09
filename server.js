@@ -8,6 +8,7 @@ import userRoutes from './routes/userRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
 import couponRoutes from './routes/couponRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
+import settingRoutes from './routes/settingsRoutes.js';
 
 
 const app = express();
@@ -26,7 +27,8 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/coupons', couponRoutes);
-app.use('/api/upload', uploadRoutes); // 👈 2. فتحنا الباب لعملية الرفع
+app.use('/api/upload', uploadRoutes);
+app.use('/api/settings', settingRoutes);
 
 // مسار تجريبي
 app.get('/', (req, res) => {
