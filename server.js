@@ -10,18 +10,15 @@ import couponRoutes from './routes/couponRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import settingRoutes from './routes/settingsRoutes.js';
 
-
 const app = express();
 app.use(express.json());
 
 app.use(cors());
 
-// الاتصال بقاعدة البيانات
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('✅ MongoDB Connected Successfully!'))
     .catch((err) => console.log('❌ MongoDB Connection Error: ', err));
 
-// 2. تشغيل المسارات 
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/users', userRoutes);
@@ -30,7 +27,6 @@ app.use('/api/coupons', couponRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/settings', settingRoutes);
 
-// مسار تجريبي
 app.get('/', (req, res) => {
     res.send('NYLA Cosmetics API is running! 🚀');
 });

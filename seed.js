@@ -1,11 +1,9 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import Product from './models/Product.js'; // لازم نكتب .js في الآخر عشان إحنا شغالين بـ ES Modules
+import Product from './models/Product.js'; 
 
-// تفعيل ملف الإعدادات
 dotenv.config();
 
-// المنتجات اللي هنرميها في الداتا بيز
 const productsData = [
     {
         name: "Rose Hydrating Lip Balm",
@@ -64,22 +62,17 @@ const productsData = [
     }
 ];
 
-// الدالة اللي بتشغل عملية النقل للداتا بيز
 const seedDatabase = async () => {
     try {
-        // 1. الاتصال بقاعدة البيانات
         await mongoose.connect(process.env.MONGO_URI);
         console.log('✅ Connected to MongoDB...');
 
-        // 2. مسح أي منتجات قديمة عشان ميتعملش تكرار
         await Product.deleteMany();
         console.log('🧹 Cleared old products...');
 
-        // 3. إضافة المنتجات الجديدة
         await Product.insertMany(productsData);
         console.log('🌱 Database Seeded Successfully with NYLA products!');
 
-        // 4. قفل الاتصال والخروج
         process.exit();
     } catch (error) {
         console.error('❌ Error with data import:', error);
@@ -87,5 +80,4 @@ const seedDatabase = async () => {
     }
 };
 
-// تشغيل الدالة
 seedDatabase();

@@ -20,7 +20,7 @@ router.route('/')
 
             const userExists = await User.findOne({ email });
             if (userExists) {
-                return res.status(400).json({ message: 'User already exists - الإيميل ده متسجل قبل كده' });
+                return res.status(400).json({ message: 'User already exists' });
             }
 
             const user = await User.create({

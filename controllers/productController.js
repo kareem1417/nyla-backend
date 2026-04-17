@@ -8,7 +8,6 @@ import Product from '../models/Product.js'; // 👈 اتأكد إن مسار ا�
 // @access  Public
 export const getProducts = async (req, res) => {
     try {
-        // بنجيب كل المنتجات، والفرونت إند (ShopPage) هو اللي هيتولى مهمة تقسيمهم وعرض 8 بـ 8
         const products = await Product.find({}).sort({ createdAt: -1 });
         res.json(products);
     } catch (error) {
@@ -116,14 +115,14 @@ export const updateProduct = async (req, res) => {
 
 // @desc    Create new review
 // @route   POST /api/products/:id/reviews
-// @access  Private (لليوزرز اللي مسجلين دخول بس)
+// @access  Private
 export const createProductReview = async (req, res) => {
     try {
         const { rating, comment } = req.body;
         const product = await Product.findById(req.params.id);
 
         if (product) {
-            // 1. هل اليوزر ده قيم المنتج ده قبل كده؟
+            
             const alreadyReviewed = product.reviews.find(
                 (r) => r.user.toString() === req.user._id.toString()
             );
@@ -132,7 +131,7 @@ export const createProductReview = async (req, res) => {
                 return res.status(400).json({ message: 'You have already reviewed this product' });
             }
 
-            // 2. إنشاء التقييم الجديد
+            
             const review = {
                 name: req.user.name,
                 rating: Number(rating),
@@ -142,7 +141,7 @@ export const createProductReview = async (req, res) => {
 
             product.reviews.push(review);
 
-            // 3. تحديث الأرقام (عدد التقييمات والمتوسط)
+            
             product.numReviews = product.reviews.length;
             product.rating = product.reviews.reduce((acc, item) => item.rating + acc, 0) / product.reviews.length;
 
@@ -162,11 +161,10 @@ export const getRelatedProducts = async (req, res) => {
     try {
         const product = await Product.findById(req.params.id);
         if (product) {
-            // بنجيب منتجات من نفس الكاتيجوري، وبنستبعد المنتج الحالي
             const related = await Product.find({
                 category: product.category,
                 _id: { $ne: product._id }
-            }).limit(4); // بنعرض 4 بس
+            }).limit(4); 
             res.json(related);
         } else {
             res.status(404).json({ message: 'Product not found' });

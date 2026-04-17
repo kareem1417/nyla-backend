@@ -7,16 +7,13 @@ const userSchema = new mongoose.Schema({
     password: { type: String, required: true },
     resetPasswordToken: String,
     resetPasswordExpire: Date,
-    // === الحقول الجديدة ===
     phone: { type: String },
     address: { type: String },
     city: { type: String },
-    // ضيف السطرين دول جوه الـ Schema بتاعت اليوزر
     wishlist: [{
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Product' // بنربطها بموديل المنتجات
+        ref: 'Product' 
     }],
-    // =====================
 
     isAdmin: { type: Boolean, required: true, default: false }
 }, {
