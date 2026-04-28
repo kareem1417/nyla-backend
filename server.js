@@ -13,8 +13,20 @@ import settingRoutes from './routes/settingsRoutes.js';
 const app = express();
 app.use(express.json());
 
-app.use(cors());
-
+const allowedOrigins = [
+    'http://localhost:5173', //my device
+    'https://nyla-fronten.vercel.app'
+];
+app.use(cors({
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true 
+}));
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('✅ MongoDB Connected Successfully!'))
     .catch((err) => console.log('❌ MongoDB Connection Error: ', err));
