@@ -133,6 +133,9 @@ export const forgotPassword = async (req, res) => {
 
         const plainTextMessage = `You requested a password reset. Please copy and paste this link in your browser to reset your password: ${resetUrl} \n\n This link expires in 10 minutes.`;
         console.log("3. Starting to send email...");
+        console.log("Checking ENV Vars:");
+        console.log("HOST:", process.env.EMAIL_HOST);
+        console.log("PORT:", process.env.EMAIL_PORT);
         await sendEmail({
             email: user.email,
             subject: 'NYLA - Password Reset Request',
