@@ -5,7 +5,7 @@ const router = express.Router();
 router.post('/', upload.single('image'), (req, res) => {
     res.send({
         message: 'Image Uploaded successfully! 📸',
-        url: req.file.path, 
+        url: req.file.path,
     });
 });
 

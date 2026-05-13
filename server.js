@@ -15,7 +15,7 @@ app.use(express.json());
 
 const allowedOrigins = [
     'http://localhost:5173', //my device
-    'https://nyla-fronten.vercel.app'
+    'https://nyla-beauty.vercel.app/'
 ];
 app.use(cors({
     origin: function (origin, callback) {
@@ -25,7 +25,7 @@ app.use(cors({
             callback(new Error('Not allowed by CORS'));
         }
     },
-    credentials: true 
+    credentials: true
 }));
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('✅ MongoDB Connected Successfully!'))
