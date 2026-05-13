@@ -142,7 +142,7 @@ export const forgotPassword = async (req, res) => {
 
         res.status(200).json({ message: 'Email sent successfully!' });
     } catch (error) {
-        onsole.log("❌ ERROR OCCURRED:", error);
+        console.log("❌ ERROR OCCURRED:", error);
         const user = await User.findOne({ email: req.body.email });
         if (user) {
             user.resetPasswordToken = undefined;
