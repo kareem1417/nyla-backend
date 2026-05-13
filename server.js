@@ -15,7 +15,7 @@ app.use(express.json());
 
 const allowedOrigins = [
     'http://localhost:5173', //my device
-    'https://nyla-beauty.vercel.app/'
+    'https://nyla-beauty.vercel.app'
 ];
 app.use(cors({
     origin: function (origin, callback) {
