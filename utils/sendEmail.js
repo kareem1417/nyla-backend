@@ -1,23 +1,20 @@
 import nodemailer from 'nodemailer';
 
 const sendEmail = async (options) => {
-
-
     const transporter = nodemailer.createTransport({
-        host: process.env.EMAIL_HOST,
-        port: process.env.EMAIL_PORT,
+        service: 'gmail',
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS,
         },
     });
 
-
     const mailOptions = {
-        from: `NYLA Cosmetics <${process.env.EMAIL_USER}>`,
+        from: `"NYLA Beauty" <${process.env.EMAIL_USER}>`,
         to: options.email,
         subject: options.subject,
-        html: options.html,
+        text: options.message, // النص العادي عشان فلاتر السبام ترتاح
+        html: options.html,    // هنا الـ HTML الشيك بتاعك
     };
 
     await transporter.sendMail(mailOptions);

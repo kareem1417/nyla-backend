@@ -3,7 +3,6 @@ import Order from '../models/Order.js';
 import crypto from 'crypto';
 import sendEmail from '../utils/sendEmail.js';
 
-
 // @desc    Update user profile
 // @route   PUT /api/users/profile
 // @access  Private
@@ -13,7 +12,7 @@ export const updateUserProfile = async (req, res) => {
         if (user) {
             user.phone = req.body.phone || user.phone;
             user.address = req.body.address || user.address;
-            user.city = req.body.city || user.city; 
+            user.city = req.body.city || user.city;
 
             const updatedUser = await user.save();
 
@@ -34,7 +33,6 @@ export const updateUserProfile = async (req, res) => {
         res.status(500).json({ message: 'Server Error' });
     }
 };
-
 
 // @desc    Get all users (For Admin)
 // @route   GET /api/users
@@ -66,14 +64,15 @@ export const getUserDetailsForAdmin = async (req, res) => {
         const orders = await Order.find({ user: userId }).sort({ createdAt: -1 });
 
         res.json({
-            ...user._doc, 
-            orders        
+            ...user._doc,
+            orders
         });
 
     } catch (error) {
         res.status(500).json({ message: 'Server Error fetching user details' });
     }
 };
+
 // @desc    Add or remove product from wishlist
 // @route   POST /api/users/wishlist
 // @access  Private 
@@ -120,7 +119,7 @@ export const forgotPassword = async (req, res) => {
 
         const resetUrl = `http://localhost:5173/reset-password/${resetToken}`;
 
-        const message = `
+        const htmlMessage = `
             <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 30px; text-align: center;">
                 <h2 style="color: #4a0404;">NYLA Cosmetics</h2>
                 <p>You requested a password reset. Click the button below to set a new password:</p>
@@ -130,10 +129,13 @@ export const forgotPassword = async (req, res) => {
             </div>
         `;
 
+        const plainTextMessage = `You requested a password reset. Please copy and paste this link in your browser to reset your password: ${resetUrl} \n\n This link expires in 10 minutes.`;
+
         await sendEmail({
             email: user.email,
             subject: 'NYLA - Password Reset Request',
-            html: message,
+            message: plainTextMessage, // النص العادي عشان السبام
+            html: htmlMessage,         // الـ HTML الشيك
         });
 
         res.status(200).json({ message: 'Email sent successfully!' });
@@ -157,7 +159,7 @@ export const resetPassword = async (req, res) => {
 
         const user = await User.findOne({
             resetPasswordToken,
-            resetPasswordExpire: { $gt: Date.now() } 
+            resetPasswordExpire: { $gt: Date.now() }
         });
 
         if (!user) {
