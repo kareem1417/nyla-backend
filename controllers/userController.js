@@ -105,8 +105,10 @@ export const toggleWishlist = async (req, res) => {
 // @route   POST /api/users/forgotpassword
 // @access  Public
 export const forgotPassword = async (req, res) => {
+    console.log("1. Request Hit! Email received:", req.body.email);
     try {
         const user = await User.findOne({ email: req.body.email });
+        console.log("2. Database Checked. User found?", user ? "Yes" : "No");
         if (!user) {
             return res.status(404).json({ message: 'There is no user with that email' });
         }
@@ -130,7 +132,7 @@ export const forgotPassword = async (req, res) => {
         `;
 
         const plainTextMessage = `You requested a password reset. Please copy and paste this link in your browser to reset your password: ${resetUrl} \n\n This link expires in 10 minutes.`;
-
+        console.log("3. Starting to send email...");
         await sendEmail({
             email: user.email,
             subject: 'NYLA - Password Reset Request',
@@ -140,6 +142,7 @@ export const forgotPassword = async (req, res) => {
 
         res.status(200).json({ message: 'Email sent successfully!' });
     } catch (error) {
+        onsole.log("❌ ERROR OCCURRED:", error);
         const user = await User.findOne({ email: req.body.email });
         if (user) {
             user.resetPasswordToken = undefined;
