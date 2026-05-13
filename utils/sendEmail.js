@@ -1,34 +1,26 @@
 import nodemailer from 'nodemailer';
 
 const sendEmail = async (options) => {
-    // 1. إعداد المحرك بتفصيل أكتر للسيرفرات
     const transporter = nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 465, // بورت آمن للـ SSL
-        secure: true, // استخدام SSL
+        host: process.env.EMAIL_HOST,
+        port: process.env.EMAIL_PORT, // هيقرا 2525 من المتغيرات
+        secure: false, // لازم false عشان ده بورت 2525
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS,
         },
-        // إضافة إعدادات الـ Timeout عشان ما يهنجش السيرفر
-        connectionTimeout: 10000, // 10 ثواني
     });
 
     const mailOptions = {
-        from: `"NYLA Beauty" <${process.env.EMAIL_USER}>`,
+        // ده الاسم والإيميل اللي هيظهر للعميل (إيميل البراند بتاعكم)
+        from: `"NYLA Beauty" <nylaabeauty@gmail.com>`,
         to: options.email,
         subject: options.subject,
         text: options.message,
         html: options.html,
     };
 
-    // 2. محاولة الإرسال مع صيد الإيرور فوراً
-    try {
-        await transporter.sendMail(mailOptions);
-    } catch (error) {
-        console.error("❌ NODEMAILER ERROR:", error);
-        throw error; // عشان الكنترولر يحس بالإيرور
-    }
+    await transporter.sendMail(mailOptions);
 };
 
 export default sendEmail;
