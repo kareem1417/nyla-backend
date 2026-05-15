@@ -119,7 +119,8 @@ export const forgotPassword = async (req, res) => {
         user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 دقايق
         await user.save();
 
-        const resetUrl = `http://localhost:5173/resetpassword/${resetToken}`;
+        const clientUrl = req.headers.origin || 'https://nyla-beauty.vercel.app';
+        const resetUrl = `${clientUrl}/resetpassword/${resetToken}`;
 
         const htmlMessage = `
             <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 30px; text-align: center;">

@@ -129,12 +129,10 @@ export const addOrderItems = async (req, res) => {
             `;
 
             await sendEmail({
-                email: order.user.email,
+                email: createdOrder.customerEmail,
                 subject: 'Order Confirmation - NYLA Beauty 🌸',
-                message: `<h1>Thank you for your order!</h1>
-            <p>Order ID: ${order._id}</p>
-            <p>Total Amount: ${order.totalPrice} EGP</p>
-            <p>We are preparing your beauty products now!</p>`,
+                message: `Thank you for your order! Order ID: ${createdOrder._id}. Total Amount: ${createdOrder.totalPrice} EGP. We are preparing your beauty products now!`,
+                html: invoiceHTML,
             });
         } catch (err) {
             console.error("Email failed to send", err);
