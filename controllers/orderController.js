@@ -40,30 +40,43 @@ export const addOrderItems = async (req, res) => {
         }
         computedItemsPrice = Math.round(computedItemsPrice * 100) / 100;
 
-        // --- Buy X Get Cheapest Free logic ---
+        // --- Buy 3 Get 1 Free logic ---
         let freeItemDiscount = 0;
         let freeItemName = null;
-        if (orderItems.length >= 2) {
-            const settings = await Setting.findOne();
-            if (settings && settings.buyXGetCheapestFree) {
-                // Find the cheapest item by its effective (discounted) unit price
-                let cheapestPrice = Infinity;
-                let cheapestName = '';
-                for (const item of orderItems) {
-                    const dbProduct = await Product.findById(item.product);
-                    if (dbProduct) {
-                        const effectivePrice = dbProduct.discountedPrice;
-                        if (effectivePrice < cheapestPrice) {
-                            cheapestPrice = effectivePrice;
-                            cheapestName = item.name || dbProduct.name;
-                        }
+
+        const settings = await Setting.findOne();
+        if (settings && settings.buyXGetCheapestFree) {
+
+            // 1. فك المنتجات لمصفوفة بناءً على الكمية (qty)
+            let allItemsExpanded = [];
+            for (const item of orderItems) {
+                const dbProduct = await Product.findById(item.product);
+                if (dbProduct) {
+                    const effectivePrice = dbProduct.discountedPrice || dbProduct.basePrice || 0;
+                    for (let i = 0; i < item.qty; i++) {
+                        allItemsExpanded.push({ price: effectivePrice, name: item.name || dbProduct.name });
                     }
                 }
-                if (cheapestPrice < Infinity) {
-                    freeItemDiscount = Math.round(cheapestPrice * 100) / 100;
-                    freeItemName = cheapestName;
-                    computedItemsPrice = Math.round((computedItemsPrice - freeItemDiscount) * 100) / 100;
-                }
+            }
+
+            // 2. حساب عدد القطع الفري
+            const totalQty = allItemsExpanded.length;
+            const freeItemsCount = Math.floor(totalQty / 4);
+
+            if (freeItemsCount > 0) {
+                // 3. الترتيب من الأرخص للأغلى
+                allItemsExpanded.sort((a, b) => a.price - b.price);
+                const freeItems = allItemsExpanded.slice(0, freeItemsCount);
+
+                // 4. حساب الخصم النهائي
+                freeItemDiscount = freeItems.reduce((sum, item) => sum + item.price, 0);
+                freeItemDiscount = Math.round(freeItemDiscount * 100) / 100;
+
+                const uniqueNames = [...new Set(freeItems.map(i => i.name))].join(' & ');
+                freeItemName = uniqueNames;
+
+                // 5. خصم المبلغ من إجمالي سلة المشتريات
+                computedItemsPrice = Math.round((computedItemsPrice - freeItemDiscount) * 100) / 100;
             }
         }
 
