@@ -1,6 +1,7 @@
 import Order from '../models/Order.js';
 import Product from '../models/Product.js';
 import Coupon from '../models/coupon.js';
+import Setting from '../models/Setting.js';
 import sendEmail from '../utils/sendEmail.js';
 // @desc    Create new order & Deduct Stock
 // @route   POST /api/orders
@@ -38,6 +39,33 @@ export const addOrderItems = async (req, res) => {
             computedItemsPrice += effectivePrice * item.qty;
         }
         computedItemsPrice = Math.round(computedItemsPrice * 100) / 100;
+
+        // --- Buy X Get Cheapest Free logic ---
+        let freeItemDiscount = 0;
+        let freeItemName = null;
+        if (orderItems.length >= 2) {
+            const settings = await Setting.findOne();
+            if (settings && settings.buyXGetCheapestFree) {
+                // Find the cheapest item by its effective (discounted) unit price
+                let cheapestPrice = Infinity;
+                let cheapestName = '';
+                for (const item of orderItems) {
+                    const dbProduct = await Product.findById(item.product);
+                    if (dbProduct) {
+                        const effectivePrice = dbProduct.discountedPrice;
+                        if (effectivePrice < cheapestPrice) {
+                            cheapestPrice = effectivePrice;
+                            cheapestName = item.name || dbProduct.name;
+                        }
+                    }
+                }
+                if (cheapestPrice < Infinity) {
+                    freeItemDiscount = Math.round(cheapestPrice * 100) / 100;
+                    freeItemName = cheapestName;
+                    computedItemsPrice = Math.round((computedItemsPrice - freeItemDiscount) * 100) / 100;
+                }
+            }
+        }
 
         let finalDiscountAmount = 0;
         let finalItemsPrice = computedItemsPrice;
@@ -85,6 +113,8 @@ export const addOrderItems = async (req, res) => {
             itemsPrice: computedItemsPrice,
             discountAmount: finalDiscountAmount,
             couponCodeUsed: couponCode ? couponCode.toUpperCase() : null,
+            freeItemDiscount,
+            freeItemName,
             shippingPrice: finalShippingPrice,
             totalPrice: finalTotalPrice
         });
@@ -120,6 +150,7 @@ export const addOrderItems = async (req, res) => {
                     </table>
                     <hr />
                     <p><strong>Subtotal:</strong> ${createdOrder.itemsPrice} EGP</p>
+                    ${createdOrder.freeItemDiscount > 0 ? `<p style="color: green;"><strong>🎁 Free Item (${createdOrder.freeItemName}):</strong> -${createdOrder.freeItemDiscount} EGP</p>` : ''}
                     ${createdOrder.discountAmount > 0 ? `<p style="color: green;"><strong>Discount (${createdOrder.couponCodeUsed}):</strong> -${createdOrder.discountAmount} EGP</p>` : ''}
                     <p><strong>Shipping:</strong> ${createdOrder.shippingPrice} EGP</p>
                     <h2 style="color: #4a0404;">Total: ${createdOrder.totalPrice} EGP</h2>

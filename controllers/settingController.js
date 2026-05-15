@@ -4,7 +4,7 @@ export const getSettings = async (req, res) => {
     try {
         let settings = await Setting.findOne();
         if (!settings) {
-            settings = await Setting.create({ shippingFee: 50 });
+            settings = await Setting.create({ shippingFee: 50, buyXGetCheapestFree: false });
         }
         res.json(settings);
     } catch (error) {
@@ -14,15 +14,19 @@ export const getSettings = async (req, res) => {
 
 export const updateSettings = async (req, res) => {
     try {
-        const { shippingFee } = req.body;
+        const { shippingFee, buyXGetCheapestFree } = req.body;
         let settings = await Setting.findOne();
 
         if (settings) {
-            settings.shippingFee = shippingFee;
+            if (shippingFee !== undefined) settings.shippingFee = shippingFee;
+            if (buyXGetCheapestFree !== undefined) settings.buyXGetCheapestFree = buyXGetCheapestFree;
             const updatedSettings = await settings.save();
             res.json(updatedSettings);
         } else {
-            const newSettings = await Setting.create({ shippingFee });
+            const newSettings = await Setting.create({
+                shippingFee: shippingFee || 50,
+                buyXGetCheapestFree: buyXGetCheapestFree || false,
+            });
             res.status(201).json(newSettings);
         }
     } catch (error) {

@@ -6,6 +6,10 @@ const settingSchema = new mongoose.Schema({
     required: true,
     default: 60,
   },
+  buyXGetCheapestFree: {
+    type: Boolean,
+    default: false,
+  },
 }, { timestamps: true });
 
 export default mongoose.model("Setting", settingSchema);
