@@ -8,7 +8,19 @@ import Product from '../models/Product.js'; // 👈 اتأكد إن مسار ا�
 // @access  Public
 export const getProducts = async (req, res) => {
     try {
-        const products = await Product.find({}).sort({ createdAt: -1 });
+        let filter = {};
+
+        // If ?offers=true, return only active, non-expired offer products
+        if (req.query.offers === 'true') {
+            filter.isOnOffer = true;
+            filter.discountPercentage = { $gt: 0 };
+            filter.$or = [
+                { discountEndDate: null },
+                { discountEndDate: { $gte: new Date() } }
+            ];
+        }
+
+        const products = await Product.find(filter).sort({ createdAt: -1 });
         res.json(products);
     } catch (error) {
         res.status(500).json({ message: 'Server Error', error: error.message });
@@ -57,7 +69,7 @@ export const deleteProduct = async (req, res) => {
 // @access  Private/Admin
 export const createProduct = async (req, res) => {
     try {
-        const { name, basePrice, category, imageUrl, description, ingredients, howToUse, size, variants } = req.body;
+        const { name, basePrice, category, imageUrl, description, ingredients, howToUse, size, variants, isOnOffer, discountPercentage, discountEndDate } = req.body;
 
         const product = new Product({
             name,
@@ -69,7 +81,10 @@ export const createProduct = async (req, res) => {
             howToUse,
             size,
             isBestSeller: false,
-            variants: variants || []
+            variants: variants || [],
+            isOnOffer: isOnOffer || false,
+            discountPercentage: discountPercentage || 0,
+            discountEndDate: discountEndDate || null
         });
 
         const createdProduct = await product.save();
@@ -86,7 +101,7 @@ export const createProduct = async (req, res) => {
 // @access  Private/Admin
 export const updateProduct = async (req, res) => {
     try {
-        const { name, basePrice, category, imageUrl, description, ingredients, howToUse, size, variants, isBestSeller } = req.body;
+        const { name, basePrice, category, imageUrl, description, ingredients, howToUse, size, variants, isBestSeller, isOnOffer, discountPercentage, discountEndDate } = req.body;
 
         const product = await Product.findById(req.params.id);
 
@@ -101,6 +116,11 @@ export const updateProduct = async (req, res) => {
             product.size = size;
             product.variants = variants;
             product.isBestSeller = isBestSeller;
+
+            // Offer fields
+            product.isOnOffer = isOnOffer !== undefined ? isOnOffer : product.isOnOffer;
+            product.discountPercentage = discountPercentage !== undefined ? discountPercentage : product.discountPercentage;
+            product.discountEndDate = discountEndDate !== undefined ? discountEndDate : product.discountEndDate;
 
             const updatedProduct = await product.save();
             res.json(updatedProduct);

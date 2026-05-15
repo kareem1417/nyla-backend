@@ -25,8 +25,22 @@ export const addOrderItems = async (req, res) => {
             return res.status(400).json({ message: 'No order items found' });
         }
 
+        // Server-side price validation: compute the real items price
+        // using each product's effective price (discounted if on offer)
+        let computedItemsPrice = 0;
+        for (const item of orderItems) {
+            const dbProduct = await Product.findById(item.product);
+            if (!dbProduct) {
+                return res.status(404).json({ message: `Product not found: ${item.product}` });
+            }
+            // Use the virtual discountedPrice which accounts for active offers
+            const effectivePrice = dbProduct.discountedPrice;
+            computedItemsPrice += effectivePrice * item.qty;
+        }
+        computedItemsPrice = Math.round(computedItemsPrice * 100) / 100;
+
         let finalDiscountAmount = 0;
-        let finalItemsPrice = Number(itemsPrice);
+        let finalItemsPrice = computedItemsPrice;
 
         if (couponCode) {
             const coupon = await Coupon.findOne({ code: couponCode.toUpperCase() });
@@ -64,7 +78,7 @@ export const addOrderItems = async (req, res) => {
             orderItems,
             shippingAddress,
             paymentMethod,
-            itemsPrice: Number(itemsPrice),
+            itemsPrice: computedItemsPrice,
             discountAmount: finalDiscountAmount,
             couponCodeUsed: couponCode ? couponCode.toUpperCase() : null,
             shippingPrice: Number(shippingPrice),

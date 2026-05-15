@@ -33,9 +33,29 @@ const productSchema = new mongoose.Schema({
         required: true,
         default: false
     },
-    variants: [variantSchema]
+    variants: [variantSchema],
+
+    // Offer / Discount fields
+    isOnOffer: { type: Boolean, default: false },
+    discountPercentage: { type: Number, default: 0, min: 0, max: 100 },
+    discountEndDate: { type: Date, default: null }
 }, {
-    timestamps: true
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true }
+});
+
+// Virtual: compute the discounted price from basePrice and discountPercentage
+productSchema.virtual('discountedPrice').get(function () {
+    if (this.isOnOffer && this.discountPercentage > 0) {
+        const now = new Date();
+        // If there's an end date and it has passed, return the original price
+        if (this.discountEndDate && new Date(this.discountEndDate) < now) {
+            return this.basePrice;
+        }
+        return Math.round(this.basePrice * (1 - this.discountPercentage / 100) * 100) / 100;
+    }
+    return this.basePrice;
 });
 
 export default mongoose.model('Product', productSchema);
