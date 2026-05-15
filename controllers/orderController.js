@@ -68,7 +68,11 @@ export const addOrderItems = async (req, res) => {
             }
         }
 
-        const finalTotalPrice = finalItemsPrice + Number(shippingPrice);
+        // Free shipping if subtotal (after coupon) is 750 EGP or more
+        const FREE_SHIPPING_THRESHOLD = 750;
+        const finalShippingPrice = finalItemsPrice >= FREE_SHIPPING_THRESHOLD ? 0 : Number(shippingPrice);
+
+        const finalTotalPrice = finalItemsPrice + finalShippingPrice;
 
 
         const order = new Order({
@@ -81,7 +85,7 @@ export const addOrderItems = async (req, res) => {
             itemsPrice: computedItemsPrice,
             discountAmount: finalDiscountAmount,
             couponCodeUsed: couponCode ? couponCode.toUpperCase() : null,
-            shippingPrice: Number(shippingPrice),
+            shippingPrice: finalShippingPrice,
             totalPrice: finalTotalPrice
         });
 
