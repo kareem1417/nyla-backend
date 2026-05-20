@@ -3,9 +3,7 @@ import Product from '../models/Product.js';
 import Coupon from '../models/coupon.js';
 import Setting from '../models/Setting.js';
 import sendEmail from '../utils/sendEmail.js';
-// @desc    Create new order & Deduct Stock
-// @route   POST /api/orders
-// @access  Private
+
 // @desc    Create new order & Deduct Stock
 // @route   POST /api/orders
 // @access  Private / Public
@@ -27,14 +25,12 @@ export const addOrderItems = async (req, res) => {
         }
 
         // Server-side price validation: compute the real items price
-        // using each product's effective price (discounted if on offer)
         let computedItemsPrice = 0;
         for (const item of orderItems) {
             const dbProduct = await Product.findById(item.product);
             if (!dbProduct) {
                 return res.status(404).json({ message: `Product not found: ${item.product}` });
             }
-            // Use the virtual discountedPrice which accounts for active offers
             const effectivePrice = dbProduct.discountedPrice;
             computedItemsPrice += effectivePrice * item.qty;
         }
@@ -59,7 +55,7 @@ export const addOrderItems = async (req, res) => {
                 }
             }
 
-            // 2. حساب عدد القطع الفري
+            // 2. حساب عدد القطع الفري (Buy 3 Get 1 Free)
             const totalQty = allItemsExpanded.length;
             const freeItemsCount = Math.floor(totalQty / 4);
 
@@ -90,14 +86,12 @@ export const addOrderItems = async (req, res) => {
                 const isExpired = new Date(coupon.expiryDate) < new Date();
                 const isLimitReached = coupon.usedBy.length >= coupon.usageLimit;
 
-
                 const isAlreadyUsed = req.user ? coupon.usedBy.includes(req.user._id) : false;
                 const isTargetUser = coupon.targetUser ? (req.user && coupon.targetUser.toString() === req.user._id.toString()) : true;
 
                 if (coupon.isActive && !isExpired && !isLimitReached && !isAlreadyUsed && isTargetUser) {
                     finalDiscountAmount = (finalItemsPrice * coupon.discountPercentage) / 100;
                     finalItemsPrice = finalItemsPrice - finalDiscountAmount;
-
 
                     if (req.user) {
                         coupon.usedBy.push(req.user._id);
@@ -115,11 +109,10 @@ export const addOrderItems = async (req, res) => {
 
         const finalTotalPrice = finalItemsPrice + finalShippingPrice;
 
-
         const order = new Order({
             user: req.user ? req.user._id : undefined,
-            customerName: customerName,   // 👈 من الفورم
-            customerEmail: customerEmail, // 👈 من الفورم
+            customerName: customerName,
+            customerEmail: customerEmail,
             orderItems,
             shippingAddress,
             paymentMethod,
@@ -134,39 +127,40 @@ export const addOrderItems = async (req, res) => {
 
         const createdOrder = await order.save();
 
-
+        // 🌟 إرسال التنبيهات عبر الإيميل 🌟
         try {
+            // 1. فاتورة العميل
             const invoiceHTML = `
-                <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 30px;">
-                    <h1 style="text-align: center; color: #4a0404;">NYLA.</h1>
+                <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 30px; border-radius: 16px;">
+                    <h1 style="text-align: center; color: #800020; letter-spacing: 2px;">NYLA</h1>
                     <p>Hi ${createdOrder.customerName},</p>
                     <p>Thank you for your order! Here is your invoice summary:</p>
-                    <hr />
+                    <hr style="border: 1px solid #eee;" />
                     <p><strong>Order ID:</strong> #${createdOrder._id.toString().substring(18)}</p>
-                    <table style="width: 100%; text-align: left; margin-bottom: 20px;">
+                    <table style="width: 100%; text-align: left; margin-bottom: 20px; border-collapse: collapse;">
                         <thead>
                             <tr>
-                                <th style="border-bottom: 1px solid #eee; padding-bottom: 8px;">Product</th>
-                                <th style="border-bottom: 1px solid #eee; padding-bottom: 8px;">Qty</th>
-                                <th style="border-bottom: 1px solid #eee; padding-bottom: 8px; text-align: right;">Price</th>
+                                <th style="border-bottom: 1px solid #eee; padding-bottom: 8px; color: #800020;">Product</th>
+                                <th style="border-bottom: 1px solid #eee; padding-bottom: 8px; text-align: center; color: #800020;">Qty</th>
+                                <th style="border-bottom: 1px solid #eee; padding-bottom: 8px; text-align: right; color: #800020;">Price</th>
                             </tr>
                         </thead>
                         <tbody>
                             ${createdOrder.orderItems.map(item => `
                                 <tr>
                                     <td style="padding: 8px 0;">${item.name} <br><small style="color: #888;">${item.variantId !== 'default' ? 'Shade: ' + item.variantId : ''}</small></td>
-                                    <td style="padding: 8px 0;">${item.qty}</td>
+                                    <td style="padding: 8px 0; text-align: center;">${item.qty}</td>
                                     <td style="padding: 8px 0; text-align: right;">${item.price * item.qty} EGP</td>
                                 </tr>
                             `).join('')}
                         </tbody>
                     </table>
-                    <hr />
+                    <hr style="border: 1px solid #eee;" />
                     <p><strong>Subtotal:</strong> ${createdOrder.itemsPrice} EGP</p>
                     ${createdOrder.freeItemDiscount > 0 ? `<p style="color: green;"><strong>🎁 Free Item (${createdOrder.freeItemName}):</strong> -${createdOrder.freeItemDiscount} EGP</p>` : ''}
                     ${createdOrder.discountAmount > 0 ? `<p style="color: green;"><strong>Discount (${createdOrder.couponCodeUsed}):</strong> -${createdOrder.discountAmount} EGP</p>` : ''}
-                    <p><strong>Shipping:</strong> ${createdOrder.shippingPrice} EGP</p>
-                    <h2 style="color: #4a0404;">Total: ${createdOrder.totalPrice} EGP</h2>
+                    <p><strong>Shipping:</strong> ${createdOrder.shippingPrice === 0 ? 'FREE' : `${createdOrder.shippingPrice} EGP`}</p>
+                    <h2 style="color: #800020;">Total: ${createdOrder.totalPrice} EGP</h2>
                     <p style="margin-top: 20px;"><strong>Shipping to:</strong> ${createdOrder.shippingAddress.address}, ${createdOrder.shippingAddress.city}</p>
                     <p style="text-align: center; font-size: 12px; color: #888; margin-top: 40px;">Nyla Cosmetics - Natural & Handcrafted</p>
                 </div>
@@ -178,8 +172,32 @@ export const addOrderItems = async (req, res) => {
                 message: `Thank you for your order! Order ID: ${createdOrder._id}. Total Amount: ${createdOrder.totalPrice} EGP. We are preparing your beauty products now!`,
                 html: invoiceHTML,
             });
+
+            // 2. تنبيه لصاحب البراند (الأدمن)
+            const adminAlertHTML = `
+                <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 2px solid #800020; padding: 20px; border-radius: 12px;">
+                    <h2 style="color: #800020; margin-top: 0;">🚨 New Order Alert! 💸</h2>
+                    <p><strong>Customer Name:</strong> ${createdOrder.customerName}</p>
+                    <p><strong>Phone Number:</strong> ${createdOrder.shippingAddress.phone}</p>
+                    <p><strong>Total Value:</strong> <span style="font-size: 18px; color: #800020; font-weight: bold;">${createdOrder.totalPrice} EGP</span></p>
+                    <p><strong>City/Area:</strong> ${createdOrder.shippingAddress.city}</p>
+                    <p><strong>Items Ordered:</strong> ${createdOrder.orderItems.length} items</p>
+                    <hr style="border: 1px solid #eee; margin: 20px 0;" />
+                    <p style="font-size: 13px; color: #666;">Please check your Admin Dashboard to view full details and prepare the shipment.</p>
+                </div>
+            `;
+
+            await sendEmail({
+                email: process.env.ADMIN_EMAIL || process.env.EMAIL_USER,
+                subject: `🚨 New Order from ${createdOrder.customerName} - ${createdOrder.totalPrice} EGP`,
+                message: `New order placed by ${createdOrder.customerName} for ${createdOrder.totalPrice} EGP.`,
+                html: adminAlertHTML,
+            });
+
+            console.log("✅ Confirmation email sent to customer and Admin alert email sent!");
+
         } catch (err) {
-            console.error("Email failed to send", err);
+            console.error("❌ Email service error:", err);
         }
 
         res.status(201).json(createdOrder);
@@ -195,7 +213,6 @@ export const addOrderItems = async (req, res) => {
 // @access  Private/Admin
 export const getOrders = async (req, res) => {
     try {
-
         const orders = await Order.find({}).sort({ createdAt: -1 });
         res.json(orders);
     } catch (error) {
@@ -209,11 +226,9 @@ export const getOrders = async (req, res) => {
 export const updateOrderToDelivered = async (req, res) => {
     try {
         const order = await Order.findById(req.params.id);
-
         if (order) {
             order.isDelivered = true;
             order.deliveredAt = Date.now();
-
             const updatedOrder = await order.save();
             res.json(updatedOrder);
         } else {
@@ -262,7 +277,7 @@ export const updateOrderToCancelled = async (req, res) => {
             if (product) {
                 const variantIndex = product.variants.findIndex(v => v.id === item.variantId);
                 if (variantIndex !== -1) {
-                    product.variants[variantIndex].stock += item.qty; // 👈 بنزود اللي اتخصم
+                    product.variants[variantIndex].stock += item.qty;
                     await product.save();
                 }
             }
