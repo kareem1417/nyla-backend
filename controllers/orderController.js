@@ -194,16 +194,45 @@ export const addOrderItems = async (req, res) => {
             });
 
             // 2. تنبيه لصاحب البراند (الأدمن)
+            // 2. تنبيه لصاحب البراند (الأدمن)
             const adminAlertHTML = `
                 <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 2px solid #800020; padding: 20px; border-radius: 12px;">
                     <h2 style="color: #800020; margin-top: 0;">🚨 New Order Alert! 💸</h2>
                     <p><strong>Customer Name:</strong> ${createdOrder.customerName}</p>
                     <p><strong>Phone Number:</strong> ${createdOrder.shippingAddress.phone}</p>
-                    <p><strong>Total Value:</strong> <span style="font-size: 18px; color: #800020; font-weight: bold;">${createdOrder.totalPrice} EGP</span></p>
                     <p><strong>City/Area:</strong> ${createdOrder.shippingAddress.city}</p>
-                    <p><strong>Items Ordered:</strong> ${createdOrder.orderItems.length} items</p>
+                    
+                    <h3 style="color: #444; margin-top: 25px; border-bottom: 1px solid #eee; padding-bottom: 5px;">Order Details:</h3>
+                    <table style="width: 100%; text-align: left; margin-bottom: 20px; border-collapse: collapse; font-size: 14px;">
+                        <thead>
+                            <tr>
+                                <th style="border-bottom: 1px solid #eee; padding-bottom: 8px; color: #800020;">Product</th>
+                                <th style="border-bottom: 1px solid #eee; padding-bottom: 8px; text-align: center; color: #800020;">Qty</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${createdOrder.orderItems.map(item => `
+                                <tr>
+                                    <td style="padding: 8px 0; border-bottom: 1px solid #fafafa;">
+                                        ${item.name} 
+                                        ${item.variantId !== 'default' ? `<br><span style="color: #888; font-size: 12px;">Shade: ${item.variantId}</span>` : ''}
+                                    </td>
+                                    <td style="padding: 8px 0; text-align: center; border-bottom: 1px solid #fafafa;"><strong>${item.qty}</strong></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+
+                    <div style="background-color: #FAF8F6; padding: 15px; border-radius: 8px; margin-top: 20px;">
+                        <p style="margin: 0; color: #333;"><strong>Subtotal:</strong> ${createdOrder.itemsPrice} EGP</p>
+                        <p style="margin: 5px 0; color: #333;"><strong>Shipping:</strong> ${createdOrder.shippingPrice} EGP</p>
+                        ${createdOrder.freeItemDiscount > 0 ? `<p style="margin: 5px 0; color: green;"><strong>🎁 Free Item:</strong> -${createdOrder.freeItemDiscount} EGP</p>` : ''}
+                        ${createdOrder.discountAmount > 0 ? `<p style="margin: 5px 0; color: green;"><strong>Discount:</strong> -${createdOrder.discountAmount} EGP</p>` : ''}
+                        <h3 style="margin: 10px 0 0 0; color: #800020; font-size: 20px;">Total Value: ${createdOrder.totalPrice} EGP</h3>
+                    </div>
+
                     <hr style="border: 1px solid #eee; margin: 20px 0;" />
-                    <p style="font-size: 13px; color: #666;">Please check your Admin Dashboard to view full details and prepare the shipment.</p>
+                    <p style="font-size: 13px; color: #666; text-align: center;">Please check your Admin Dashboard to view full details and prepare the shipment.</p>
                 </div>
             `;
 
