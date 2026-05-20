@@ -126,6 +126,26 @@ export const addOrderItems = async (req, res) => {
         });
 
         const createdOrder = await order.save();
+        // 🌟 خصم الكمية من المخزون (Stock Deduction) 🌟
+        for (const item of orderItems) {
+            const product = await Product.findById(item.product);
+            if (product && product.variants) {
+                // بندور على الـ variant اللي العميل اشتراه
+                const variantIndex = product.variants.findIndex(
+                    v => v.id === item.variantId || v._id.toString() === item.variantId
+                );
+
+                // لو لقيناه، بننقص منه الكمية اللي العميل طلبها
+                if (variantIndex !== -1) {
+                    product.variants[variantIndex].stock -= item.qty;
+                    // لزيادة الأمان: بنمنع المخزون ينزل تحت الصفر
+                    if (product.variants[variantIndex].stock < 0) {
+                        product.variants[variantIndex].stock = 0;
+                    }
+                    await product.save();
+                }
+            }
+        }
 
         // 🌟 إرسال التنبيهات عبر الإيميل 🌟
         try {
